@@ -15,8 +15,8 @@ import {
   Copy, 
   Check, 
   AlertTriangle,
-  Layers,
-  Filter
+  ChevronDown,
+  Layers
 } from 'lucide-react';
 
 // --- SUBJECT SUBHEADINGS CONFIGURATION ---
@@ -297,9 +297,10 @@ const INITIAL_QUESTIONS = {
 };
 
 export default function App() {
-  // Navigation, Subject & Topic Filter State
+  // Navigation, Subject, Hover Menu & Topic Filter State
   const [activeSubject, setActiveSubject] = useState('regulations');
   const [activeTopic, setActiveTopic] = useState('ALL');
+  const [hoveredSubject, setHoveredSubject] = useState(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   
   // Custom Question Store (Persistent in LocalStorage)
@@ -362,8 +363,6 @@ export default function App() {
     { id: 'tech_general', title: 'Technical General', icon: Wrench, count: questions.tech_general?.length || 0 },
   ];
 
-  const availableSubheadings = SUBJECT_SUBHEADINGS[activeSubject] || [];
-
   // Filter questions by selected subheading
   const filteredQuestions = useMemo(() => {
     const allInSubject = questions[activeSubject] || [];
@@ -373,21 +372,18 @@ export default function App() {
 
   const currentQ = filteredQuestions[currentIndex];
 
-  // Count questions per subheading for dropdown badges
-  const getTopicCount = (topicName) => {
-    const allInSubject = questions[activeSubject] || [];
+  // Count questions per subheading for any subject
+  const getTopicCountForSubject = (subjId, topicName) => {
+    const allInSubject = questions[subjId] || [];
     return allInSubject.filter(q => q.topic === topicName).length;
   };
 
-  const handleSubjectChange = (subjectId) => {
+  // Select subject and specific chapter directly from hover dropdown
+  const handleSelectSubjectAndTopic = (subjectId, topicName = 'ALL') => {
     setActiveSubject(subjectId);
-    setActiveTopic('ALL');
-    setCurrentIndex(0);
-  };
-
-  const handleTopicChange = (topicName) => {
     setActiveTopic(topicName);
     setCurrentIndex(0);
+    setHoveredSubject(null);
   };
 
   const handleSelectAnswer = (optionIndex) => {
@@ -512,7 +508,7 @@ export default function App() {
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-cyan-500 selection:text-black">
       
       {/* --- TOP BRAND HEADER --- */}
-      <header className="border-b border-slate-800 bg-slate-900/80 backdrop-blur-md sticky top-0 z-40">
+      <header className="border-b border-slate-800 bg-slate-900/90 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 rounded-lg bg-gradient-to-tr from-cyan-600 to-blue-500 flex items-center justify-center font-black text-white text-xl tracking-tighter shadow-lg shadow-cyan-500/20">
@@ -555,7 +551,7 @@ export default function App() {
       </header>
 
       {/* --- BANNER TAGLINE --- */}
-      <div className="bg-gradient-to-r from-cyan-950/40 via-blue-950/30 to-slate-950 border-b border-slate-800/80 px-4 py-2.5">
+      <div className="bg-gradient-to-r from-cyan-950/40 via-blue-950/30 to-slate-950 border-b border-slate-800/80 px-4 py-2">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between text-xs text-slate-300">
           <div className="flex items-center space-x-2">
             <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
@@ -564,71 +560,142 @@ export default function App() {
             </span>
           </div>
           <div className="hidden md:flex items-center space-x-4 text-slate-400">
-            <span>Single-Device Protection Active</span>
+            <span>Hover any subject below to pick a chapter</span>
             <span className="text-slate-600">•</span>
             <span>Monthly Subscription: ₹300</span>
           </div>
         </div>
       </div>
 
-      {/* --- SUBJECT NAVIGATION TABS (5 SECTIONS) --- */}
-      <nav className="bg-slate-900 border-b border-slate-800 overflow-x-auto">
-        <div className="max-w-7xl mx-auto px-4 flex space-x-2 py-2.5">
+      {/* --- SUBJECT NAVIGATION BAR WITH HOVER SUBHEADING DROPDOWNS --- */}
+      <nav 
+        className="bg-slate-900 border-b border-slate-800 relative z-40"
+        onMouseLeave={() => setHoveredSubject(null)}
+      >
+        <div className="max-w-7xl mx-auto px-4 flex flex-wrap items-center gap-1.5 py-2.5">
           {subjectsList.map((subject) => {
             const Icon = subject.icon;
             const isActive = activeSubject === subject.id;
+            const isHovered = hoveredSubject === subject.id;
+            const hasSubtopics = (SUBJECT_SUBHEADINGS[subject.id] || []).length > 0;
+
             return (
-              <button
+              <div
                 key={subject.id}
-                onClick={() => handleSubjectChange(subject.id)}
-                className={`flex items-center space-x-2 px-3.5 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
-                  isActive 
-                    ? 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/40 shadow-sm' 
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
-                }`}
+                onMouseEnter={() => setHoveredSubject(subject.id)}
+                className="relative"
               >
-                <Icon className={`w-4 h-4 ${isActive ? 'text-cyan-400' : 'text-slate-500'}`} />
-                <span>{subject.title}</span>
-                <span className={`px-1.5 py-0.5 rounded-full text-[10px] ${
-                  isActive ? 'bg-cyan-500/20 text-cyan-300' : 'bg-slate-800 text-slate-400'
-                }`}>
-                  {subject.count}
-                </span>
-              </button>
+                <button
+                  onClick={() => handleSelectSubjectAndTopic(subject.id, 'ALL')}
+                  className={`flex items-center space-x-2 px-3.5 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
+                    isActive 
+                      ? 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/40 shadow-sm' 
+                      : isHovered
+                      ? 'bg-slate-800 text-white border border-slate-700'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 border border-transparent'
+                  }`}
+                >
+                  <Icon className={`w-4 h-4 ${isActive || isHovered ? 'text-cyan-400' : 'text-slate-500'}`} />
+                  <span>{subject.title}</span>
+                  <span className={`px-1.5 py-0.5 rounded-full text-[10px] ${
+                    isActive ? 'bg-cyan-500/20 text-cyan-300' : 'bg-slate-800 text-slate-400'
+                  }`}>
+                    {subject.count}
+                  </span>
+                  {hasSubtopics && (
+                    <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-150 ${
+                      isHovered ? 'rotate-180 text-cyan-400' : 'text-slate-500'
+                    }`} />
+                  )}
+                </button>
+              </div>
             );
           })}
         </div>
-      </nav>
 
-      {/* --- CHAPTER / SUBHEADING SELECTOR BAR --- */}
-      {availableSubheadings.length > 0 && (
-        <div className="bg-slate-900/50 border-b border-slate-800/80 py-3 px-4">
-          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-center space-x-2 text-xs text-slate-300">
-              <Layers className="w-4 h-4 text-cyan-400 shrink-0" />
-              <span className="font-semibold">Topic / Chapter ({availableSubheadings.length} Sections):</span>
-            </div>
-            
-            <div className="flex items-center space-x-2 flex-1 sm:max-w-md">
-              <Filter className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-              <select
-                value={activeTopic}
-                onChange={(e) => handleTopicChange(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-700 text-slate-200 text-xs rounded-lg px-3 py-2 focus:outline-none focus:border-cyan-500"
-              >
-                <option value="ALL">
-                  All {subjectsList.find(s => s.id === activeSubject)?.title} Chapters ({questions[activeSubject]?.length || 0} Qs)
-                </option>
-                {availableSubheadings.map((topic, idx) => (
-                  <option key={idx} value={topic}>
-                    {idx + 1}. {topic} ({getTopicCount(topic)} Qs)
-                  </option>
-                ))}
-              </select>
+        {/* --- HOVER MEGA-DROPDOWN PANEL --- */}
+        {hoveredSubject && (SUBJECT_SUBHEADINGS[hoveredSubject] || []).length > 0 && (
+          <div 
+            onMouseEnter={() => setHoveredSubject(hoveredSubject)}
+            onMouseLeave={() => setHoveredSubject(null)}
+            className="absolute left-0 right-0 top-full bg-slate-900/98 backdrop-blur-xl border-b-2 border-cyan-500/50 shadow-2xl shadow-black/80 z-50"
+          >
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
+              {/* Dropdown Top Bar */}
+              <div className="flex flex-wrap items-center justify-between gap-2 pb-3 mb-3 border-b border-slate-800">
+                <div className="flex items-center space-x-2">
+                  <Layers className="w-4 h-4 text-cyan-400" />
+                  <span className="text-xs font-bold text-white uppercase tracking-wider">
+                    {subjectsList.find(s => s.id === hoveredSubject)?.title} — Select Chapter ({SUBJECT_SUBHEADINGS[hoveredSubject].length} Sub-headings)
+                  </span>
+                </div>
+                <button
+                  onClick={() => handleSelectSubjectAndTopic(hoveredSubject, 'ALL')}
+                  className="px-3 py-1 rounded-md bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-300 border border-cyan-500/30 text-xs font-semibold transition-colors"
+                >
+                  Practice All Chapters ({questions[hoveredSubject]?.length || 0} Qs)
+                </button>
+              </div>
+
+              {/* Multi-column Scrollable Sub-headings Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-1.5 max-h-72 overflow-y-auto pr-1">
+                {SUBJECT_SUBHEADINGS[hoveredSubject].map((topic, idx) => {
+                  const qCount = getTopicCountForSubject(hoveredSubject, topic);
+                  const isCurrentlySelected = activeSubject === hoveredSubject && activeTopic === topic;
+
+                  return (
+                    <button
+                      key={idx}
+                      onClick={() => handleSelectSubjectAndTopic(hoveredSubject, topic)}
+                      className={`text-left px-3 py-2 rounded-lg text-xs flex items-center justify-between gap-2 transition-all border ${
+                        isCurrentlySelected
+                          ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-200 font-semibold'
+                          : 'bg-slate-950/60 border-slate-800/80 hover:bg-slate-800 hover:border-cyan-500/40 text-slate-300 hover:text-white'
+                      }`}
+                    >
+                      <span className="truncate">
+                        <span className="text-slate-500 font-mono mr-1.5">{idx + 1}.</span>
+                        {topic}
+                      </span>
+                      <span className={`px-1.5 py-0.5 rounded text-[10px] font-mono shrink-0 ${
+                        qCount > 0 
+                          ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' 
+                          : 'bg-slate-900 text-slate-500'
+                      }`}>
+                        {qCount}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
+        )}
+      </nav>
+
+      {/* --- ACTIVE CHAPTER INDICATOR BAR --- */}
+      <div className="bg-slate-900/40 border-b border-slate-800/60 px-4 py-2">
+        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2 text-xs">
+          <div className="flex items-center space-x-2 text-slate-400">
+            <span>Selected:</span>
+            <span className="font-semibold text-cyan-400">
+              {subjectsList.find(s => s.id === activeSubject)?.title}
+            </span>
+            <span>/</span>
+            <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-200 font-medium border border-slate-700">
+              {activeTopic === 'ALL' ? 'All Chapters Combined' : activeTopic}
+            </span>
+          </div>
+          {activeTopic !== 'ALL' && (
+            <button
+              onClick={() => handleSelectSubjectAndTopic(activeSubject, 'ALL')}
+              className="text-[11px] text-cyan-400 hover:underline"
+            >
+              Show All Chapters
+            </button>
+          )}
         </div>
-      )}
+      </div>
 
       {/* --- MAIN INTERFACE --- */}
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 py-6 grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -763,11 +830,11 @@ export default function App() {
                 No questions uploaded yet for "{activeTopic}".
               </p>
               <p className="text-xs text-slate-500">
-                Select another chapter from the dropdown above or upload PYQs via the Instructor Hub.
+                Hover over any subject tab above to pick another chapter, or upload PYQs via the Instructor Hub.
               </p>
               {activeTopic !== 'ALL' && (
                 <button
-                  onClick={() => setActiveTopic('ALL')}
+                  onClick={() => handleSelectSubjectAndTopic(activeSubject, 'ALL')}
                   className="mt-2 px-4 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-cyan-400 text-xs font-semibold"
                 >
                   View All Chapters in {subjectsList.find(s => s.id === activeSubject)?.title}
