@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   ShieldCheck, 
   Compass, 
@@ -11,24 +11,167 @@ import {
   Lock, 
   Smartphone, 
   Laptop, 
-  LogOut, 
-  PlusCircle, 
   Trash2, 
-  QrCode, 
   Copy, 
   Check, 
   AlertTriangle,
-  ArrowRight,
-  HelpCircle,
-  FileText
+  Layers,
+  Filter
 } from 'lucide-react';
 
-// --- INITIAL QUESTION BANK (5 SECTIONS) ---
+// --- SUBJECT SUBHEADINGS CONFIGURATION ---
+const SUBJECT_SUBHEADINGS = {
+  regulations: [
+    "Rules of the Air",
+    "Security",
+    "Separation in the Vicinity of Aerodromes",
+    "Separation Methods and Minima",
+    "Special Operational Procedures and Hazards",
+    "Use of ATS Surveillance System",
+    "Visual Aids for Navigation",
+    "SAR",
+    "Facilitation",
+    "Human Factors",
+    "National Law",
+    "Operational Procedures",
+    "PANS-OPS",
+    "Personnel Licensing",
+    "A/C Incident Accident",
+    "A/C Nationality and Registration Marks",
+    "AIS",
+    "Air Traffic Services",
+    "Airworthiness of Aircraft",
+    "Communications",
+    "DGCA Reg Questions",
+    "Definitions and ICAO"
+  ],
+  meteorology: [
+    "Met Instruments",
+    "Met Reports and Weather Forecasts",
+    "Met Services",
+    "Mountain Waves and Tropical Systems",
+    "Optical Phenomenon",
+    "Precipitation and Ice Accretion",
+    "Stability and Instability",
+    "Station Model",
+    "Temperature",
+    "Thunderstorms",
+    "Visibility and Fog",
+    "Weather Radar and Satellites",
+    "Winds",
+    "Navigation",
+    "Air Masses and Fronts",
+    "Atmosphere",
+    "Atmospheric Pressure",
+    "Climatology of India",
+    "Clouds",
+    "DGCA Met Questions",
+    "Density",
+    "General Circulation",
+    "Humidity",
+    "Jet Streams and CAT"
+  ],
+  navigation: [
+    "1:60 Rule and Descend",
+    "ADF/NDB",
+    "ASI",
+    "AWR",
+    "Air Temperature Gauge",
+    "Altimeter",
+    "Artificial Horizon",
+    "Basic Radio Theory and Radio Propagation",
+    "CP and PNR",
+    "CX3 Dead Reckoning Navigation",
+    "DGI",
+    "DIMC",
+    "DME",
+    "EFIS",
+    "Earth Magnetism",
+    "FMS",
+    "Flight Planning",
+    "GC, RL, Departure",
+    "General Nav Test Paper",
+    "GNSS",
+    "Gyro Introduction",
+    "ILS ,INS/IRS",
+    "Introduction to Pitot Static System",
+    "Machmeter",
+    "Maps and Charts",
+    "Mass and Balance",
+    "Nav DGCA Exam 300 QB",
+    "Performance",
+    "RIMC",
+    "Radar Introduction and Types",
+    "Radio Altimeter",
+    "SSR",
+    "Scale",
+    "TSI",
+    "The Earth and Directions",
+    "Time",
+    "VOR",
+    "VSI",
+    "Solar System",
+    "Test Paper Instruments",
+    "Test Paper Radios"
+  ],
+  rtr: [
+    "Area Control",
+    "Communication",
+    "Communication Systems QBS",
+    "Copy of AKG Aerodrome Control",
+    "Copy of AKG GOP",
+    "Copy of RTR Questions",
+    "Copy of TEST 01",
+    "Copy of TEST 02",
+    "Copy of TEST 03",
+    "Copy of TEST 04",
+    "Copy of TEST 06",
+    "Doc 4444",
+    "Doc 9432",
+    "Electricity",
+    "Electricity and Magnetism",
+    "HF VHF",
+    "HF VHF 2",
+    "General ATS Surveillance Service Phraseology",
+    "General Operating Procedures",
+    "General RT Phraseology",
+    "HF Communications",
+    "Met 01",
+    "QB 01",
+    "Radio Nav",
+    "Regs 01",
+    "Regs 02",
+    "Runway Markings",
+    "Radio Theory",
+    "RTR Mock Test 07",
+    "RTR Mock Test 08",
+    "SELCAL, CPDLC, ACARS, ELT, SATCOM and MLS",
+    "Transmission of Meteorological and Other Aerodrome Information",
+    "Visual Signals Runway/Taxiway Markings/Lightings",
+    "Annex 10 Vol 01",
+    "Annex 10 Volume 02",
+    "Annex 10 Volume 3",
+    "Classes of Airspace",
+    "Miscellaneous",
+    "Miscellaneous Flight Handling Phraseology",
+    "Organizations",
+    "Pronunciation Questions (Word vs Pronunciation)",
+    "RTR (AERO) Exam - Decoded Questions with MCQ Options",
+    "RTR Mock Test 09",
+    "RTR Mock Test 10",
+    "RTR Final Correct Answers",
+    "Distress and Urgency Procedures and Communications Failure Procedures"
+  ],
+  tech_general: []
+};
+
+// --- INITIAL SAMPLE QUESTION BANK ---
 const INITIAL_QUESTIONS = {
   regulations: [
     {
       id: "reg-1",
-      question: "According to DGCA regulations, what is the minimum lateral separation required outside controlled airspace under VFR?",
+      topic: "Rules of the Air",
+      question: "According to DGCA regulations, what is the minimum cloud clearance required outside controlled airspace (Class G) above 3000 ft AMSL under VFR?",
       options: [
         "500 ft from any person, vessel, vehicle or structure",
         "1000 ft above the highest obstacle within 8 km",
@@ -40,6 +183,7 @@ const INITIAL_QUESTIONS = {
     },
     {
       id: "reg-2",
+      topic: "Rules of the Air",
       question: "When two aircraft are converging at approximately the same level, which aircraft has the right of way?",
       options: [
         "The aircraft on the left",
@@ -54,6 +198,7 @@ const INITIAL_QUESTIONS = {
   meteorology: [
     {
       id: "met-1",
+      topic: "Visibility and Fog",
       question: "Which type of fog is formed by radiational cooling of the ground at night under clear skies and calm or light wind?",
       options: [
         "Advection fog",
@@ -66,6 +211,7 @@ const INITIAL_QUESTIONS = {
     },
     {
       id: "met-2",
+      topic: "Winds",
       question: "In the Northern Hemisphere, according to Buys Ballot's Law, if an observer stands with their back to the wind, where is the low pressure?",
       options: [
         "Directly ahead",
@@ -80,6 +226,7 @@ const INITIAL_QUESTIONS = {
   navigation: [
     {
       id: "nav-1",
+      topic: "1:60 Rule and Descend",
       question: "Using the 1-in-60 rule: After flying 60 NM, an aircraft is 3 NM off track. What is the track error angle (TE)?",
       options: [
         "1 degree",
@@ -92,6 +239,7 @@ const INITIAL_QUESTIONS = {
     },
     {
       id: "nav-2",
+      topic: "GC, RL, Departure",
       question: "Departure along a parallel of latitude between two meridians is calculated as:",
       options: [
         "Change of Longitude (minutes) × cos(Latitude)",
@@ -106,6 +254,7 @@ const INITIAL_QUESTIONS = {
   rtr: [
     {
       id: "rtr-1",
+      topic: "Distress and Urgency Procedures and Communications Failure Procedures",
       question: "Which of the following urgency signals must be repeated three times on the VHF frequency during RTR communications?",
       options: [
         "MAYDAY",
@@ -118,6 +267,7 @@ const INITIAL_QUESTIONS = {
     },
     {
       id: "rtr-2",
+      topic: "Distress and Urgency Procedures and Communications Failure Procedures",
       question: "What is the transponder squawk code allocated internationally for complete communications failure (two-way radio loss)?",
       options: [
         "Squawk 7500",
@@ -132,6 +282,7 @@ const INITIAL_QUESTIONS = {
   tech_general: [
     {
       id: "tech-1",
+      topic: "General",
       question: "What is the primary purpose of vortex generators installed along the upper wing surface of modern transport aircraft?",
       options: [
         "Increase wing tip vortex strength",
@@ -141,30 +292,19 @@ const INITIAL_QUESTIONS = {
       ],
       correct: 1,
       explanation: "Vortex generators re-energize the boundary layer by drawing high-energy airflow into the lower boundary region, postponing airflow separation and stall."
-    },
-    {
-      id: "tech-2",
-      question: "In a reciprocating aviation engine, detonation is most commonly caused by:",
-      options: [
-        "Using fuel with an octane rating higher than specified",
-        "Extremely rich fuel-air mixtures at low cylinder temperatures",
-        "Excessive cylinder head temperature and low fuel octane grade",
-        "Rapid cooling during high-speed descents"
-      ],
-      correct: 2,
-      explanation: "Detonation is the uncontrolled, explosive combustion of the remaining fuel-air charge, triggered by excessive heat, high manifold pressure, or substandard octane fuel."
     }
   ]
 };
 
 export default function App() {
-  // Navigation & Subject State
+  // Navigation, Subject & Topic Filter State
   const [activeSubject, setActiveSubject] = useState('regulations');
+  const [activeTopic, setActiveTopic] = useState('ALL');
   const [currentIndex, setCurrentIndex] = useState(0);
   
   // Custom Question Store (Persistent in LocalStorage)
   const [questions, setQuestions] = useState(() => {
-    const saved = localStorage.getItem('aeroprep_questions');
+    const saved = localStorage.getItem('aeroprep_questions_v2');
     return saved ? JSON.parse(saved) : INITIAL_QUESTIONS;
   });
 
@@ -181,7 +321,9 @@ export default function App() {
   const [adminError, setAdminError] = useState('');
   const [showAdminDashboard, setShowAdminDashboard] = useState(false);
 
-  // Question Upload Mode: 'plain' or 'json'
+  // Admin Upload Target State
+  const [uploadSubject, setUploadSubject] = useState('regulations');
+  const [uploadTopic, setUploadTopic] = useState(SUBJECT_SUBHEADINGS.regulations[0]);
   const [uploadMode, setUploadMode] = useState('plain');
   const [plainTextInput, setPlainTextInput] = useState('');
   const [jsonInput, setJsonInput] = useState('');
@@ -202,7 +344,7 @@ export default function App() {
 
   // Save questions when updated
   useEffect(() => {
-    localStorage.setItem('aeroprep_questions', JSON.stringify(questions));
+    localStorage.setItem('aeroprep_questions_v2', JSON.stringify(questions));
   }, [questions]);
 
   // Monitor single device login status
@@ -220,17 +362,43 @@ export default function App() {
     { id: 'tech_general', title: 'Technical General', icon: Wrench, count: questions.tech_general?.length || 0 },
   ];
 
-  const currentQuestions = questions[activeSubject] || [];
-  const currentQ = currentQuestions[currentIndex];
+  const availableSubheadings = SUBJECT_SUBHEADINGS[activeSubject] || [];
+
+  // Filter questions by selected subheading
+  const filteredQuestions = useMemo(() => {
+    const allInSubject = questions[activeSubject] || [];
+    if (activeTopic === 'ALL') return allInSubject;
+    return allInSubject.filter(q => q.topic === activeTopic);
+  }, [questions, activeSubject, activeTopic]);
+
+  const currentQ = filteredQuestions[currentIndex];
+
+  // Count questions per subheading for dropdown badges
+  const getTopicCount = (topicName) => {
+    const allInSubject = questions[activeSubject] || [];
+    return allInSubject.filter(q => q.topic === topicName).length;
+  };
+
+  const handleSubjectChange = (subjectId) => {
+    setActiveSubject(subjectId);
+    setActiveTopic('ALL');
+    setCurrentIndex(0);
+  };
+
+  const handleTopicChange = (topicName) => {
+    setActiveTopic(topicName);
+    setCurrentIndex(0);
+  };
 
   const handleSelectAnswer = (optionIndex) => {
     if (!isSubscribed && currentIndex >= 1) {
       setShowPaymentModal(true);
       return;
     }
+    const answerKey = currentQ.id || `${activeSubject}-${activeTopic}-${currentIndex}`;
     setUserAnswers({
       ...userAnswers,
-      [`${activeSubject}-${currentIndex}`]: optionIndex
+      [answerKey]: optionIndex
     });
   };
 
@@ -247,7 +415,13 @@ export default function App() {
     }
   };
 
-  // Parse plain text questions
+  const handleUploadSubjectChange = (newSubj) => {
+    setUploadSubject(newSubj);
+    const topics = SUBJECT_SUBHEADINGS[newSubj] || [];
+    setUploadTopic(topics.length > 0 ? topics[0] : 'General');
+  };
+
+  // Parse plain text questions & tag with selected subheading
   const handlePlainTextImport = () => {
     setImportStatus('');
     try {
@@ -266,7 +440,8 @@ export default function App() {
 
         if (qMatch && aMatch && bMatch && cMatch && dMatch && ansMatch) {
           parsed.push({
-            id: `${activeSubject}-${Date.now()}-${idx}`,
+            id: `${uploadSubject}-${Date.now()}-${idx}`,
+            topic: uploadTopic,
             question: qMatch[1].trim(),
             options: [
               aMatch[1].trim(),
@@ -287,16 +462,16 @@ export default function App() {
 
       setQuestions(prev => ({
         ...prev,
-        [activeSubject]: [...(prev[activeSubject] || []), ...parsed]
+        [uploadSubject]: [...(prev[uploadSubject] || []), ...parsed]
       }));
       setPlainTextInput('');
-      setImportStatus(`Successfully imported ${parsed.length} questions into ${activeSubject.toUpperCase()}!`);
+      setImportStatus(`Successfully imported ${parsed.length} questions into [${uploadSubject.toUpperCase()} → ${uploadTopic}]!`);
     } catch {
       setImportStatus('Failed to parse text. Please check the structure.');
     }
   };
 
-  // Parse bulk JSON questions
+  // Parse bulk JSON questions & tag with selected subheading
   const handleJsonImport = () => {
     setImportStatus('');
     try {
@@ -305,12 +480,18 @@ export default function App() {
         setImportStatus('JSON must be an array of questions: [ { ... } ]');
         return;
       }
+      const enriched = parsed.map((item, idx) => ({
+        ...item,
+        id: item.id || `${uploadSubject}-${Date.now()}-${idx}`,
+        topic: item.topic || uploadTopic
+      }));
+
       setQuestions(prev => ({
         ...prev,
-        [activeSubject]: [...(prev[activeSubject] || []), ...parsed]
+        [uploadSubject]: [...(prev[uploadSubject] || []), ...enriched]
       }));
       setJsonInput('');
-      setImportStatus(`Successfully added ${parsed.length} questions into ${activeSubject.toUpperCase()}!`);
+      setImportStatus(`Successfully added ${enriched.length} questions into [${uploadSubject.toUpperCase()} → ${uploadTopic}]!`);
     } catch {
       setImportStatus('Invalid JSON syntax. Ensure quotes and commas are correct.');
     }
@@ -324,6 +505,8 @@ export default function App() {
     setActiveSessionInDb(currentSessionId);
     setSessionLocked(false);
   };
+
+  const currentAnswerKey = currentQ ? (currentQ.id || `${activeSubject}-${activeTopic}-${currentIndex}`) : null;
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-cyan-500 selection:text-black">
@@ -348,7 +531,7 @@ export default function App() {
             {!isSubscribed ? (
               <button 
                 onClick={() => setShowPaymentModal(true)}
-                className="px-3.5 py-1.5 text-xs font-semibold rounded-md bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-bold transition-all shadow-md shadow-orange-500/20"
+                className="px-3.5 py-1.5 text-xs rounded-md bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-bold transition-all shadow-md shadow-orange-500/20"
               >
                 Unlock All (₹300/mo)
               </button>
@@ -390,20 +573,17 @@ export default function App() {
 
       {/* --- SUBJECT NAVIGATION TABS (5 SECTIONS) --- */}
       <nav className="bg-slate-900 border-b border-slate-800 overflow-x-auto">
-        <div className="max-w-7xl mx-auto px-4 flex space-x-2 py-2">
+        <div className="max-w-7xl mx-auto px-4 flex space-x-2 py-2.5">
           {subjectsList.map((subject) => {
             const Icon = subject.icon;
             const isActive = activeSubject === subject.id;
             return (
               <button
                 key={subject.id}
-                onClick={() => {
-                  setActiveSubject(subject.id);
-                  setCurrentIndex(0);
-                }}
+                onClick={() => handleSubjectChange(subject.id)}
                 className={`flex items-center space-x-2 px-3.5 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
                   isActive 
-                    ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 shadow-sm' 
+                    ? 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/40 shadow-sm' 
                     : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
                 }`}
               >
@@ -420,6 +600,36 @@ export default function App() {
         </div>
       </nav>
 
+      {/* --- CHAPTER / SUBHEADING SELECTOR BAR --- */}
+      {availableSubheadings.length > 0 && (
+        <div className="bg-slate-900/50 border-b border-slate-800/80 py-3 px-4">
+          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center space-x-2 text-xs text-slate-300">
+              <Layers className="w-4 h-4 text-cyan-400 shrink-0" />
+              <span className="font-semibold">Topic / Chapter ({availableSubheadings.length} Sections):</span>
+            </div>
+            
+            <div className="flex items-center space-x-2 flex-1 sm:max-w-md">
+              <Filter className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+              <select
+                value={activeTopic}
+                onChange={(e) => handleTopicChange(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-700 text-slate-200 text-xs rounded-lg px-3 py-2 focus:outline-none focus:border-cyan-500"
+              >
+                <option value="ALL">
+                  All {subjectsList.find(s => s.id === activeSubject)?.title} Chapters ({questions[activeSubject]?.length || 0} Qs)
+                </option>
+                {availableSubheadings.map((topic, idx) => (
+                  <option key={idx} value={topic}>
+                    {idx + 1}. {topic} ({getTopicCount(topic)} Qs)
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* --- MAIN INTERFACE --- */}
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 py-6 grid grid-cols-1 lg:grid-cols-4 gap-6">
         
@@ -429,14 +639,22 @@ export default function App() {
             <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 sm:p-7 shadow-xl relative overflow-hidden">
               
               {/* Question Meta Bar */}
-              <div className="flex items-center justify-between pb-4 border-b border-slate-800 mb-5">
-                <div className="flex items-center space-x-2">
+              <div className="flex flex-wrap items-center justify-between gap-2 pb-4 border-b border-slate-800 mb-5">
+                <div className="flex flex-wrap items-center gap-2">
                   <span className="text-xs font-semibold text-cyan-400 uppercase tracking-wider">
                     {subjectsList.find(s => s.id === activeSubject)?.title}
                   </span>
+                  {currentQ.topic && (
+                    <>
+                      <span className="text-slate-600">•</span>
+                      <span className="px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-[11px] font-medium text-slate-300">
+                        {currentQ.topic}
+                      </span>
+                    </>
+                  )}
                   <span className="text-slate-600">•</span>
                   <span className="text-xs text-slate-400 font-mono">
-                    PYQ #{currentIndex + 1} of {currentQuestions.length}
+                    PYQ #{currentIndex + 1} of {filteredQuestions.length}
                   </span>
                 </div>
                 {!isSubscribed && currentIndex >= 1 && (
@@ -455,8 +673,7 @@ export default function App() {
               {/* Multiple Choice Options */}
               <div className="space-y-3">
                 {currentQ.options.map((option, idx) => {
-                  const qKey = `${activeSubject}-${currentIndex}`;
-                  const answeredIdx = userAnswers[qKey];
+                  const answeredIdx = userAnswers[currentAnswerKey];
                   const hasAnswered = answeredIdx !== undefined;
                   const isSelected = answeredIdx === idx;
                   const isCorrectAnswer = idx === currentQ.correct;
@@ -465,10 +682,8 @@ export default function App() {
 
                   if (hasAnswered) {
                     if (isCorrectAnswer) {
-                      // Correct selection -> Always Emerald Green
                       optionStyle = "border-emerald-500 bg-emerald-950/40 text-emerald-200 font-medium";
                     } else if (isSelected && !isCorrectAnswer) {
-                      // Wrong selection -> Crimson Red
                       optionStyle = "border-red-500 bg-red-950/40 text-red-200";
                     } else {
                       optionStyle = "border-slate-800/40 bg-slate-900/40 text-slate-500 opacity-60";
@@ -504,7 +719,7 @@ export default function App() {
               </div>
 
               {/* Explanation Box (Visible after answering) */}
-              {userAnswers[`${activeSubject}-${currentIndex}`] !== undefined && (
+              {userAnswers[currentAnswerKey] !== undefined && (
                 <div className="mt-6 p-4 rounded-lg bg-slate-800/60 border border-slate-700/60">
                   <div className="flex items-center space-x-2 text-cyan-400 mb-1.5 text-xs font-bold tracking-wide uppercase">
                     <BookOpen className="w-4 h-4" />
@@ -531,9 +746,9 @@ export default function App() {
                       setShowPaymentModal(true);
                       return;
                     }
-                    setCurrentIndex(prev => Math.min(currentQuestions.length - 1, prev + 1));
+                    setCurrentIndex(prev => Math.min(filteredQuestions.length - 1, prev + 1));
                   }}
-                  disabled={currentIndex === currentQuestions.length - 1}
+                  disabled={currentIndex === filteredQuestions.length - 1}
                   className="px-5 py-2 rounded text-xs font-semibold bg-cyan-600 hover:bg-cyan-500 text-white disabled:opacity-40"
                 >
                   Next Question
@@ -542,10 +757,22 @@ export default function App() {
 
             </div>
           ) : (
-            <div className="bg-slate-900 border border-slate-800 rounded-xl p-12 text-center text-slate-400">
-              <BookOpen className="w-12 h-12 mx-auto text-slate-600 mb-3" />
-              <p className="text-base font-semibold text-slate-300">No questions available in this section yet.</p>
-              <p className="text-xs text-slate-500 mt-1">Upload questions via the Instructor Hub.</p>
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-12 text-center text-slate-400 space-y-3">
+              <BookOpen className="w-12 h-12 mx-auto text-slate-600" />
+              <p className="text-base font-semibold text-slate-300">
+                No questions uploaded yet for "{activeTopic}".
+              </p>
+              <p className="text-xs text-slate-500">
+                Select another chapter from the dropdown above or upload PYQs via the Instructor Hub.
+              </p>
+              {activeTopic !== 'ALL' && (
+                <button
+                  onClick={() => setActiveTopic('ALL')}
+                  className="mt-2 px-4 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-cyan-400 text-xs font-semibold"
+                >
+                  View All Chapters in {subjectsList.find(s => s.id === activeSubject)?.title}
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -556,35 +783,40 @@ export default function App() {
           {/* Question Grid Navigator */}
           <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">
             <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider mb-3">
-              Question Navigator
+              Question Navigator ({filteredQuestions.length})
             </h3>
-            <div className="grid grid-cols-5 gap-2 max-h-56 overflow-y-auto pr-1">
-              {currentQuestions.map((_, idx) => {
-                const isAnswered = userAnswers[`${activeSubject}-${idx}`] !== undefined;
-                const isCurrent = currentIndex === idx;
-                return (
-                  <button
-                    key={idx}
-                    onClick={() => {
-                      if (!isSubscribed && idx >= 2) {
-                        setShowPaymentModal(true);
-                        return;
-                      }
-                      setCurrentIndex(idx);
-                    }}
-                    className={`h-8 rounded text-xs font-mono font-medium border transition-all ${
-                      isCurrent
-                        ? 'border-cyan-400 bg-cyan-500/20 text-cyan-300 font-bold'
-                        : isAnswered
-                        ? 'border-emerald-600/50 bg-emerald-950/30 text-emerald-300'
-                        : 'border-slate-800 bg-slate-800/40 text-slate-400 hover:border-slate-700'
-                    }`}
-                  >
-                    {idx + 1}
-                  </button>
-                );
-              })}
-            </div>
+            {filteredQuestions.length > 0 ? (
+              <div className="grid grid-cols-5 gap-2 max-h-56 overflow-y-auto pr-1">
+                {filteredQuestions.map((qItem, idx) => {
+                  const qKey = qItem.id || `${activeSubject}-${activeTopic}-${idx}`;
+                  const isAnswered = userAnswers[qKey] !== undefined;
+                  const isCurrent = currentIndex === idx;
+                  return (
+                    <button
+                      key={idx}
+                      onClick={() => {
+                        if (!isSubscribed && idx >= 2) {
+                          setShowPaymentModal(true);
+                          return;
+                        }
+                        setCurrentIndex(idx);
+                      }}
+                      className={`h-8 rounded text-xs font-mono font-medium border transition-all ${
+                        isCurrent
+                          ? 'border-cyan-400 bg-cyan-500/20 text-cyan-300 font-bold'
+                          : isAnswered
+                          ? 'border-emerald-600/50 bg-emerald-950/30 text-emerald-300'
+                          : 'border-slate-800 bg-slate-800/40 text-slate-400 hover:border-slate-700'
+                      }`}
+                    >
+                      {idx + 1}
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-[11px] text-slate-500">0 questions in selected topic.</p>
+            )}
           </div>
 
           {/* Single Session Device Guardian Box */}
@@ -617,7 +849,7 @@ export default function App() {
             <span className="text-cyan-400 font-bold tracking-wide uppercase text-[10px]">CPL / ATPL PYQ Access</span>
             <div className="text-xl font-black text-white">₹300 <span className="text-xs font-normal text-slate-400">/ month</span></div>
             <p className="text-[11px] text-slate-400">
-              Unlimited access to all 5 DGCA subject banks, explanations, and latest question sets.
+              Unlimited access to all 5 DGCA subject banks, chapter-wise PYQs, and explanations.
             </p>
             {!isSubscribed && (
               <button
@@ -641,7 +873,7 @@ export default function App() {
                 <span>Instructor Management Console</span>
                 <span className="text-[10px] px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">Verified</span>
               </h2>
-              <p className="text-xs text-slate-400">Upload questions, modify syllabus sections, and manage access parameters.</p>
+              <p className="text-xs text-slate-400">Select Subject & Chapter heading, then paste your PYQs to upload.</p>
             </div>
             
             <div className="flex items-center space-x-2">
@@ -668,21 +900,52 @@ export default function App() {
             
             {/* Uploader Input Column */}
             <div className="lg:col-span-2 space-y-4">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-semibold text-slate-300">
-                  Target Subject for Questions:
-                </label>
-                <select
-                  value={activeSubject}
-                  onChange={(e) => setActiveSubject(e.target.value)}
-                  className="bg-slate-800 border border-slate-700 text-white text-xs rounded px-2.5 py-1"
-                >
-                  <option value="regulations">Air Regulations</option>
-                  <option value="meteorology">Aviation Meteorology</option>
-                  <option value="navigation">Air Navigation</option>
-                  <option value="rtr">RTR (Aero)</option>
-                  <option value="tech_general">Technical General</option>
-                </select>
+              
+              {/* Subject & Subheading Target Selectors */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-950 p-3.5 rounded-lg border border-slate-800">
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-400 mb-1">
+                    1. Select Subject:
+                  </label>
+                  <select
+                    value={uploadSubject}
+                    onChange={(e) => handleUploadSubjectChange(e.target.value)}
+                    className="w-full bg-slate-900 border border-slate-700 text-white text-xs rounded px-2.5 py-2"
+                  >
+                    <option value="regulations">Air Regulations (22 Chapters)</option>
+                    <option value="meteorology">Aviation Meteorology (24 Chapters)</option>
+                    <option value="navigation">Air Navigation (41 Chapters)</option>
+                    <option value="rtr">RTR (Aero) (46 Chapters)</option>
+                    <option value="tech_general">Technical General</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-400 mb-1">
+                    2. Select Chapter / Subheading:
+                  </label>
+                  {(SUBJECT_SUBHEADINGS[uploadSubject] || []).length > 0 ? (
+                    <select
+                      value={uploadTopic}
+                      onChange={(e) => setUploadTopic(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-700 text-cyan-300 text-xs rounded px-2.5 py-2"
+                    >
+                      {(SUBJECT_SUBHEADINGS[uploadSubject] || []).map((topic, idx) => (
+                        <option key={idx} value={topic}>
+                          {idx + 1}. {topic}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      value={uploadTopic}
+                      onChange={(e) => setUploadTopic(e.target.value)}
+                      placeholder="General"
+                      className="w-full bg-slate-900 border border-slate-700 text-white text-xs rounded px-2.5 py-2"
+                    />
+                  )}
+                </div>
               </div>
 
               {uploadMode === 'plain' ? (
@@ -707,7 +970,7 @@ export default function App() {
                     onClick={handlePlainTextImport}
                     className="mt-2.5 px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold rounded shadow-md"
                   >
-                    Convert & Add Questions
+                    Upload to "{uploadTopic}"
                   </button>
                 </div>
               ) : (
@@ -716,20 +979,20 @@ export default function App() {
                     rows={10}
                     value={jsonInput}
                     onChange={(e) => setJsonInput(e.target.value)}
-                    placeholder={`[\n  {\n    "id": "nav-101",\n    "question": "Sample question text?",\n    "options": ["A", "B", "C", "D"],\n    "correct": 1,\n    "explanation": "Rationale here."\n  }\n]`}
+                    placeholder={`[\n  {\n    "question": "Sample question text?",\n    "options": ["A", "B", "C", "D"],\n    "correct": 1,\n    "explanation": "Rationale here."\n  }\n]`}
                     className="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-xs font-mono text-slate-200 focus:outline-none focus:border-cyan-500"
                   />
                   <button
                     onClick={handleJsonImport}
                     className="mt-2.5 px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold rounded shadow-md"
                   >
-                    Import JSON Array
+                    Import JSON to "{uploadTopic}"
                   </button>
                 </div>
               )}
 
               {importStatus && (
-                <div className="p-3 bg-slate-800/80 border border-slate-700 rounded text-xs text-cyan-300">
+                <div className="p-3 bg-emerald-950/50 border border-emerald-700/60 rounded text-xs text-emerald-300">
                   {importStatus}
                 </div>
               )}
@@ -738,32 +1001,36 @@ export default function App() {
             {/* Quick Actions / Reset Column */}
             <div className="bg-slate-950 border border-slate-800 rounded-lg p-4 space-y-4 text-xs">
               <h4 className="font-bold text-white uppercase text-[11px] tracking-wider border-b border-slate-800 pb-2">
-                Section Controls ({activeSubject})
+                Section Controls ({uploadSubject})
               </h4>
               <p className="text-slate-400">
-                Currently loaded: <span className="text-cyan-400 font-bold">{questions[activeSubject]?.length || 0}</span> questions.
+                Total in {uploadSubject}: <span className="text-cyan-400 font-bold">{questions[uploadSubject]?.length || 0}</span> questions.
               </p>
               <button
                 onClick={() => {
-                  if (confirm(`Clear all questions in ${activeSubject.toUpperCase()}?`)) {
-                    setQuestions(prev => ({ ...prev, [activeSubject]: [] }));
+                  if (confirm(`Delete all questions inside chapter "${uploadTopic}"?`)) {
+                    setQuestions(prev => ({
+                      ...prev,
+                      [uploadSubject]: (prev[uploadSubject] || []).filter(q => q.topic !== uploadTopic)
+                    }));
                   }
                 }}
                 className="w-full py-2 bg-red-950/40 border border-red-800/60 hover:bg-red-900/60 text-red-300 rounded text-xs font-semibold flex items-center justify-center space-x-1.5"
               >
                 <Trash2 className="w-3.5 h-3.5" />
-                <span>Delete All in this Section</span>
+                <span>Clear Chapter "{uploadTopic}"</span>
               </button>
 
               <button
                 onClick={() => {
-                  setQuestions(INITIAL_QUESTIONS);
-                  localStorage.removeItem('aeroprep_questions');
-                  alert('Reset to original default syllabus questions.');
+                  if (confirm('Restore original sample questions?')) {
+                    setQuestions(INITIAL_QUESTIONS);
+                    localStorage.removeItem('aeroprep_questions_v2');
+                  }
                 }}
                 className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-xs"
               >
-                Restore Default Questions
+                Restore Default Sample Questions
               </button>
             </div>
 
@@ -889,7 +1156,7 @@ export default function App() {
                   setIsSubscribed(true);
                   localStorage.setItem('aeroprep_subscribed', 'true');
                   setShowPaymentModal(false);
-                  alert('Payment confirmed! All 5 subjects are now unlocked.');
+                  alert('Payment confirmed! All subjects and chapters are now unlocked.');
                 } else {
                   alert('Please enter a valid 12-digit UPI UTR reference.');
                 }
